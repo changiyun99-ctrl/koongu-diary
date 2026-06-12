@@ -214,14 +214,14 @@ input.amt-input{text-align:right}
         <textarea id="f-todo" placeholder="특이사항이나 내일 할 일을 적어두세요..."></textarea>
       </div>
 
-      <button class="save-btn" onclick="saveDay()">저장</button>
-      <button class="delete-btn" onclick="deleteDay()">이 날 기록 전체 삭제</button>
+      <button class="save-btn" id="save-btn">저장</button>
+      <button class="delete-btn" id="del-btn">이 날 기록 전체 삭제</button>
     </div>
   </div>
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbwnS3EtK9I9NuZxzUd8JTEa87LxNHYvqqhqX-CVBgbSmJIMqJM4HpyP8GE_dDBC-3HR/exec';
+const API = 'https://script.google.com/macros/s/AKfycbytglf8eI36b34tQrv_c4WnzyjhwrelscCZrVc55aeC4AxEA5z7C3uWKcY6caA6Fcem/exec';
 const CACHE_KEY = 'koongu_diary_v1';
 
 let curYear, curMonth, openKey;
@@ -437,8 +437,9 @@ function openModal(y, m, d) {
   const dow = new Date(y, m, d).getDay();
   const days = ['일','월','화','수','목','금','토'];
   const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-  openKey = dateKey(y, m, d);
-  const rec = data[openKey] || {};
+  const key = dateKey(y, m, d);
+  openKey = key;
+  const rec = data[key] || {};
   document.getElementById('modal-date-lbl').textContent = `${y}년 ${months[m]} ${d}일 (${days[dow]})`;
   document.getElementById('f-memo').value = rec.memo || '';
   document.getElementById('f-todo').value = rec.todo || '';
@@ -446,6 +447,10 @@ function openModal(y, m, d) {
   makeRows('expense', rec.expense);
   makeRows('sale', rec.sale);
   makeRows('buy', rec.buy);
+  const saveBtn = document.getElementById('save-btn');
+  saveBtn.onclick = () => saveDay(key);
+  const delBtn = document.getElementById('del-btn');
+  delBtn.onclick = () => deleteDay(key);
   document.getElementById('modal-overlay').classList.add('open');
   setTimeout(() => document.getElementById('f-memo').focus(), 300);
 }
@@ -459,8 +464,8 @@ function handleOverlayClick(e) {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
 }
 
-async function saveDay() {
-  if (!openKey) return;
+async function saveDay(key) {
+  if (!key) { showToast('⚠ 날짜 오류'); return; }
   const rec = {
     memo: document.getElementById('f-memo').value.trim(),
     todo: document.getElementById('f-todo').value.trim(),
@@ -470,17 +475,17 @@ async function saveDay() {
     buy: getRows('buy'),
   };
   const isEmpty = !rec.memo && !rec.todo && !rec.income.length && !rec.expense.length && !rec.sale.length && !rec.buy.length;
-  if (isEmpty) { data[openKey] = undefined; delete data[openKey]; }
-  else { data[openKey] = rec; }
+  if (isEmpty) { delete data[key]; }
+  else { data[key] = rec; }
   saveCache();
   closeModal();
   render();
   showToast('저장 중...');
   try {
     if (isEmpty) {
-      await fetch(API, { method:'POST', body: JSON.stringify({ action:'delete', key: openKey }) });
+      await fetch(API, { method:'POST', body: JSON.stringify({ action:'delete', key: key }) });
     } else {
-      await fetch(API, { method:'POST', body: JSON.stringify({ action:'save', key: openKey, data: rec }) });
+      await fetch(API, { method:'POST', body: JSON.stringify({ action:'save', key: key, data: rec }) });
     }
     showToast('✓ 저장 완료');
   } catch(e) {
@@ -488,15 +493,15 @@ async function saveDay() {
   }
 }
 
-async function deleteDay() {
-  if (!openKey) return;
+async function deleteDay(key) {
+  if (!key) return;
   if (!confirm('이 날 기록을 모두 삭제할까요?')) return;
-  delete data[openKey];
+  delete data[key];
   saveCache();
   closeModal();
   render();
   try {
-    await fetch(API, { method:'POST', body: JSON.stringify({ action:'delete', key: openKey }) });
+    await fetch(API, { method:'POST', body: JSON.stringify({ action:'delete', key: key }) });
     showToast('✓ 삭제 완료');
   } catch(e) {}
 }
