@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>🔧 공구가게 업무일지</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --navy:#1B3A6B;
+  --navy-light:#2E5FA3;
+  --green:#1a6b3c;
+  --red:#8b1a1a;
+  --blue:#1A4B8B;
+  --brown:#5B3A1A;
+  --purple:#4A1A6B;
+  --bg:#F7F8FA;
+  --bg2:#FFFFFF;
+  --border:#E2E6ED;
+  --text:#1A1A2E;
+  --text2:#5A6478;
+  --text3:#9AA3B2;
+  --shadow:0 2px 12px rgba(27,58,107,0.08);
+  --radius:12px;
+  --radius-sm:8px;
+}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR',sans-serif;color:var(--text);overflow-x:hidden}
+
+/* ── TOP BAR ── */
+.topbar{position:sticky;top:0;z-index:50;background:var(--navy);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-title{color:#fff;font-size:16px;font-weight:600;letter-spacing:-.3px}
+.topbar-sub{color:rgba(255,255,255,.6);font-size:12px;margin-top:1px}
+.sync-btn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.sync-btn:active{background:rgba(255,255,255,.25)}
+
+/* ── MONTH NAV ── */
+.month-nav{background:var(--bg2);padding:14px 16px 12px;border-bottom:1px solid var(--border);position:sticky;top:56px;z-index:40}
+.month-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.month-label{font-size:22px;font-weight:700;color:var(--navy);letter-spacing:-.5px}
+.nav-btns{display:flex;gap:6px;align-items:center}
+.nav-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg2);color:var(--navy);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.nav-btn:active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.today-chip{height:32px;padding:0 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);font-size:13px;cursor:pointer;font-weight:500}
+.today-chip:active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── SUMMARY STRIP ── */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sum-card{background:var(--bg);border-radius:var(--radius-sm);padding:8px 6px;text-align:center}
+.sum-label{font-size:10px;color:var(--text3);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum-val{font-size:13px;font-weight:600}
+.sum-val.inc{color:var(--green)}
+.sum-val.exp{color:var(--red)}
+.sum-val.sale{color:var(--blue)}
+.sum-val.buy{color:var(--brown)}
+
+/* ── CALENDAR ── */
+.cal-body{padding:12px 12px 100px}
+.dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+.dow{text-align:center;font-size:11px;font-weight:600;color:var(--text3);padding:4px 0}
+.dow.sun{color:#c0392b}.dow.sat{color:#2563EB}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.day-cell{background:var(--bg2);border-radius:var(--radius-sm);min-height:68px;padding:6px 5px;cursor:pointer;border:1.5px solid transparent;transition:border-color .15s;position:relative;overflow:hidden}
+.day-cell:active{border-color:var(--navy)}
+.day-cell.empty{background:transparent;cursor:default;border-color:transparent}
+.day-cell.today{border-color:var(--navy)}
+.day-cell.has-data{border-color:rgba(27,58,107,.2)}
+.day-num{font-size:13px;font-weight:600;color:var(--text);line-height:1;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.day-cell.sun .day-num{color:#c0392b}
+.day-cell.sat .day-num{color:#2563EB}
+.day-cell.today .day-num-inner{background:var(--navy);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.dot-row{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:3px}
+.dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.day-preview{font-size:10px;color:var(--text2);line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
+.amt-preview{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+@media(min-width:600px){.modal-overlay{align-items:center}}
+.modal{background:var(--bg2);width:100%;max-width:560px;max-height:92vh;border-radius:20px 20px 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media(min-width:600px){.modal{border-radius:var(--radius);max-height:88vh}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0}
+.modal-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:10}
+.modal-date{font-size:17px;font-weight:700;color:var(--navy)}
+.modal-close{position:absolute;right:12px;top:12px;width:32px;height:32px;border-radius:50%;border:none;background:var(--bg);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:14px 16px 24px}
+.field-block{margin-bottom:16px}
+.field-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.5px}
+.label-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+textarea,input[type=text],input[type=number]{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);-webkit-appearance:none}
+textarea{min-height:80px;resize:vertical;line-height:1.6}
+textarea:focus,input:focus{outline:none;border-color:var(--navy);background:#fff}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.row-item{display:grid;grid-template-columns:1fr 110px 36px;gap:6px;margin-bottom:8px;align-items:center}
+input.amt-input{text-align:right}
+.icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg);color:var(--text3);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn:active{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+.add-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--navy-light);background:none;border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:8px 12px;cursor:pointer;width:100%;justify-content:center;font-weight:500}
+.add-btn:active{background:rgba(27,58,107,.05)}
+.save-btn{width:100%;height:48px;border-radius:var(--radius);border:none;background:var(--navy);color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;letter-spacing:-.3px}
+.save-btn:active{background:#122a52}
+.delete-btn{width:100%;height:40px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:13px;cursor:pointer;margin-top:8px}
+.delete-btn:active{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+
+/* ── LOADING / TOAST ── */
+.loading{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--text2);font-weight:500}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;z-index:400;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">데이터 불러오는 중...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🔧 공구가게 업무일지</div>
+  </div>
+  <button class="sync-btn" onclick="syncData()" id="sync-btn">
+    <span id="sync-icon">↻</span> 동기화
+  </button>
+</div>
+
+<!-- MONTH NAV -->
+<div class="month-nav">
+  <div class="month-row">
+    <div class="month-label" id="month-label"></div>
+    <div class="nav-btns">
+      <button class="nav-btn" onclick="changeMonth(-1)" aria-label="이전 달">‹</button>
+      <button class="today-chip" onclick="goToday()">오늘</button>
+      <button class="nav-btn" onclick="changeMonth(1)" aria-label="다음 달">›</button>
+    </div>
+  </div>
+  <div class="summary-strip">
+    <div class="sum-card"><div class="sum-label">이번달 입금</div><div class="sum-val inc" id="s-inc">-</div></div>
+    <div class="sum-card"><div class="sum-label">이번달 출금</div><div class="sum-val exp" id="s-exp">-</div></div>
+    <div class="sum-card"><div class="sum-label">매출계산서</div><div class="sum-val sale" id="s-sale">-</div></div>
+    <div class="sum-card"><div class="sum-label">매입계산서</div><div class="sum-val buy" id="s-buy">-</div></div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="cal-body">
+  <div class="dow-row">
+    <div class="dow sun">일</div>
+    <div class="dow">월</div>
+    <div class="dow">화</div>
+    <div class="dow">수</div>
+    <div class="dow">목</div>
+    <div class="dow">금</div>
+    <div class="dow sat">토</div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-date" id="modal-date-lbl"></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="field-block">
+        <div class="field-label"><span class="label-dot" style="background:var(--navy)"></span>업무 메모</div>
+        <textarea id="f-memo" placeholder="오늘 있었던 일을 자유롭게 기록하세요..."></textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-block">
+        <div class="field-label"><span class="label-dot" style="background:var(--green)"></span>입금 내역</div>
+        <div id="income-rows"></div>
+        <button class="add-btn" onclick="addRow('income')">+ 항목 추가</button>
+      </div>
+
+      <div class="field-block">
+        <div class="field-label"><span class="label-dot" style="background:var(--red)"></span>출금 내역</div>
+        <div id="expense-rows"></div>
+        <button class="add-btn" onclick="addRow('expense')">+ 항목 추가</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-block">
+        <div class="field-label"><span class="label-dot" style="background:var(--blue)"></span>매출 세금계산서</div>
+        <div id="sale-rows"></div>
+        <button class="add-btn" onclick="addRow('sale')">+ 항목 추가</button>
+      </div>
+
+      <div class="field-block">
+        <div class="field-label"><span class="label-dot" style="background:var(--brown)"></span>매입 세금계산서</div>
+        <div id="buy-rows"></div>
+        <button class="add-btn" onclick="addRow('buy')">+ 항목 추가</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-block">
+        <div class="field-label"><span class="label-dot" style="background:var(--purple)"></span>특이사항 / 내일 할 일</div>
+        <textarea id="f-todo" placeholder="특이사항이나 내일 할 일을 적어두세요..."></textarea>
+      </div>
+
+      <button class="save-btn" onclick="saveDay()">저장</button>
+      <button class="delete-btn" onclick="deleteDay()">이 날 기록 전체 삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbytglf8eI36b34tQrv_c4WnzyjhwrelscCZrVc55aeC4AxEA5z7C3uWKcY6caA6Fcem/exec';
+const CACHE_KEY = 'koongu_diary_v1';
+
+let curYear, curMonth, openKey;
+let data = {};
+const today = new Date();
+
+function fmt(n) {
+  if (!n || n === 0) return '0';
+  return Math.round(n).toLocaleString('ko-KR');
+}
+function fmtShort(n) {
+  if (!n) return '';
+  if (n >= 100000000) return (n / 100000000).toFixed(1) + '억';
+  if (n >= 10000) return Math.round(n / 10000) + '만';
+  return Math.round(n).toLocaleString('ko-KR');
+}
+function dateKey(y, m, d) {
+  return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function loadCache() {
+  try { const c = localStorage.getItem(CACHE_KEY); if (c) data = JSON.parse(c); } catch(e) {}
+}
+function saveCache() {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+async function fetchAll() {
+  const res = await fetch(API + '?action=getAll');
+  const json = await res.json();
+  data = json;
+  saveCache();
+}
+
+async function syncData() {
+  const btn = document.getElementById('sync-btn');
+  const icon = document.getElementById('sync-icon');
+  icon.style.animation = 'spin .8s linear infinite';
+  btn.disabled = true;
+  try {
+    await fetchAll();
+    render();
+    showToast('✓ 동기화 완료');
+  } catch(e) {
+    showToast('⚠ 네트워크 오류. 캐시 데이터 사용 중');
+  }
+  icon.style.animation = '';
+  btn.disabled = false;
+}
+
+function changeMonth(d) {
+  curMonth += d;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0) { curMonth = 11; curYear--; }
+  render();
+}
+function goToday() {
+  curYear = today.getFullYear();
+  curMonth = today.getMonth();
+  render();
+}
+
+function monthSummary(y, m) {
+  const prefix = `${y}-${String(m + 1).padStart(2,'0')}-`;
+  let inc = 0, exp = 0, sale = 0, buy = 0;
+  Object.keys(data).forEach(k => {
+    if (!k.startsWith(prefix)) return;
+    const r = data[k];
+    (r.income || []).forEach(x => inc += parseFloat(String(x.amt).replace(/,/g,'')) || 0);
+    (r.expense || []).forEach(x => exp += parseFloat(String(x.amt).replace(/,/g,'')) || 0);
+    (r.sale || []).forEach(x => sale += parseFloat(String(x.amt).replace(/,/g,'')) || 0);
+    (r.buy || []).forEach(x => buy += parseFloat(String(x.amt).replace(/,/g,'')) || 0);
+  });
+  return { inc, exp, sale, buy };
+}
+
+function render() {
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('month-label').textContent = `${curYear}년 ${months[curMonth]}`;
+
+  const sm = monthSummary(curYear, curMonth);
+  document.getElementById('s-inc').textContent = fmtShort(sm.inc) + (sm.inc >= 10000 ? '원' : sm.inc === 0 ? '원' : '원');
+  document.getElementById('s-exp').textContent = fmtShort(sm.exp) + '원';
+  document.getElementById('s-sale').textContent = fmtShort(sm.sale) + '원';
+  document.getElementById('s-buy').textContent = fmtShort(sm.buy) + '원';
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const first = new Date(curYear, curMonth, 1).getDay();
+  const days = new Date(curYear, curMonth + 1, 0).getDate();
+
+  for (let i = 0; i < first; i++) {
+    const el = document.createElement('div');
+    el.className = 'day-cell empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= days; d++) {
+    const dow = (first + d - 1) % 7;
+    const key = dateKey(curYear, curMonth, d);
+    const rec = data[key] || {};
+    const isToday = curYear === today.getFullYear() && curMonth === today.getMonth() && d === today.getDate();
+
+    const hasInc = rec.income && rec.income.length > 0;
+    const hasExp = rec.expense && rec.expense.length > 0;
+    const hasSale = rec.sale && rec.sale.length > 0;
+    const hasBuy = rec.buy && rec.buy.length > 0;
+    const hasMemo = !!rec.memo;
+    const hasAny = hasInc || hasExp || hasSale || hasBuy || hasMemo || !!rec.todo;
+
+    let cls = 'day-cell';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (isToday) cls += ' today';
+    if (hasAny) cls += ' has-data';
+
+    const el = document.createElement('div');
+    el.className = cls;
+    el.onclick = () => openModal(curYear, curMonth, d);
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'day-num';
+    const inner = document.createElement('span');
+    inner.className = 'day-num-inner';
+    inner.textContent = d;
+    numDiv.appendChild(inner);
+    el.appendChild(numDiv);
+
+    if (hasAny) {
+      const dots = document.createElement('div');
+      dots.className = 'dot-row';
+      if (hasInc) { const dot = document.createElement('div'); dot.className = 'dot'; dot.style.background = '#1a6b3c'; dots.appendChild(dot); }
+      if (hasExp) { const dot = document.createElement('div'); dot.className = 'dot'; dot.style.background = '#8b1a1a'; dots.appendChild(dot); }
+      if (hasSale) { const dot = document.createElement('div'); dot.className = 'dot'; dot.style.background = '#1A4B8B'; dots.appendChild(dot); }
+      if (hasBuy) { const dot = document.createElement('div'); dot.className = 'dot'; dot.style.background = '#5B3A1A'; dots.appendChild(dot); }
+      el.appendChild(dots);
+
+      if (hasInc) {
+        const tot = (rec.income || []).reduce((a, x) => a + (parseFloat(String(x.amt).replace(/,/g,'')) || 0), 0);
+        if (tot > 0) {
+          const p = document.createElement('div');
+          p.className = 'amt-preview';
+          p.style.color = '#1a6b3c';
+          p.textContent = '+' + fmtShort(tot);
+          el.appendChild(p);
+        }
+      }
+      if (hasExp) {
+        const tot = (rec.expense || []).reduce((a, x) => a + (parseFloat(String(x.amt).replace(/,/g,'')) || 0), 0);
+        if (tot > 0) {
+          const p = document.createElement('div');
+          p.className = 'amt-preview';
+          p.style.color = '#8b1a1a';
+          p.textContent = '-' + fmtShort(tot);
+          el.appendChild(p);
+        }
+      }
+      if (hasMemo && !hasInc && !hasExp) {
+        const p = document.createElement('div');
+        p.className = 'day-preview';
+        p.textContent = rec.memo;
+        el.appendChild(p);
+      }
+    }
+    grid.appendChild(el);
+  }
+}
+
+function makeRows(type, rows) {
+  const cont = document.getElementById(type + '-rows');
+  cont.innerHTML = '';
+  const arr = (rows && rows.length) ? rows : [{ desc: '', amt: '' }];
+  const ph = { income:'입금처', expense:'출금처', sale:'거래처 / 품목', buy:'공급업체 / 품목' };
+  arr.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'row-item';
+    div.innerHTML = `
+      <input type="text" placeholder="${ph[type]}" value="${r.desc || ''}" data-type="${type}" data-idx="${i}" data-field="desc">
+      <input type="text" inputmode="numeric" placeholder="금액" class="amt-input" value="${r.amt || ''}" data-type="${type}" data-idx="${i}" data-field="amt">
+      <button class="icon-btn" onclick="removeRow('${type}',${i})" aria-label="삭제">×</button>`;
+    cont.appendChild(div);
+  });
+}
+
+function getRows(type) {
+  const descs = document.querySelectorAll(`[data-type="${type}"][data-field="desc"]`);
+  const amts = document.querySelectorAll(`[data-type="${type}"][data-field="amt"]`);
+  const out = [];
+  descs.forEach((d, i) => {
+    const a = amts[i] ? amts[i].value.replace(/[^0-9.]/g, '') : '';
+    if (d.value || a) out.push({ desc: d.value, amt: a });
+  });
+  return out;
+}
+
+function addRow(type) {
+  const cur = getRows(type);
+  cur.push({ desc: '', amt: '' });
+  makeRows(type, cur);
+  const cont = document.getElementById(type + '-rows');
+  const inputs = cont.querySelectorAll('input');
+  if (inputs.length >= 2) inputs[inputs.length - 2].focus();
+}
+
+function removeRow(type, idx) {
+  let rows = getRows(type);
+  rows.splice(idx, 1);
+  if (!rows.length) rows = [{ desc: '', amt: '' }];
+  makeRows(type, rows);
+}
+
+function openModal(y, m, d) {
+  const dow = new Date(y, m, d).getDay();
+  const days = ['일','월','화','수','목','금','토'];
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  openKey = dateKey(y, m, d);
+  const rec = data[openKey] || {};
+  document.getElementById('modal-date-lbl').textContent = `${y}년 ${months[m]} ${d}일 (${days[dow]})`;
+  document.getElementById('f-memo').value = rec.memo || '';
+  document.getElementById('f-todo').value = rec.todo || '';
+  makeRows('income', rec.income);
+  makeRows('expense', rec.expense);
+  makeRows('sale', rec.sale);
+  makeRows('buy', rec.buy);
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-memo').focus(), 300);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  openKey = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+async function saveDay() {
+  if (!openKey) return;
+  const rec = {
+    memo: document.getElementById('f-memo').value.trim(),
+    todo: document.getElementById('f-todo').value.trim(),
+    income: getRows('income'),
+    expense: getRows('expense'),
+    sale: getRows('sale'),
+    buy: getRows('buy'),
+  };
+  const isEmpty = !rec.memo && !rec.todo && !rec.income.length && !rec.expense.length && !rec.sale.length && !rec.buy.length;
+  if (isEmpty) { data[openKey] = undefined; delete data[openKey]; }
+  else { data[openKey] = rec; }
+  saveCache();
+  closeModal();
+  render();
+  showToast('저장 중...');
+  try {
+    if (isEmpty) {
+      await fetch(API, { method:'POST', body: JSON.stringify({ action:'delete', key: openKey }) });
+    } else {
+      await fetch(API, { method:'POST', body: JSON.stringify({ action:'save', key: openKey, data: rec }) });
+    }
+    showToast('✓ 저장 완료');
+  } catch(e) {
+    showToast('⚠ 오프라인 저장됨 (나중에 동기화)');
+  }
+}
+
+async function deleteDay() {
+  if (!openKey) return;
+  if (!confirm('이 날 기록을 모두 삭제할까요?')) return;
+  delete data[openKey];
+  saveCache();
+  closeModal();
+  render();
+  try {
+    await fetch(API, { method:'POST', body: JSON.stringify({ action:'delete', key: openKey }) });
+    showToast('✓ 삭제 완료');
+  } catch(e) {}
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+(async () => {
+  curYear = today.getFullYear();
+  curMonth = today.getMonth();
+  loadCache();
+  render();
+  document.getElementById('loading').style.display = 'none';
+  try {
+    await fetchAll();
+    render();
+  } catch(e) {
+    showToast('⚠ 오프라인 모드 - 캐시 사용 중');
+  }
+})();
+</script>
+</body>
+</html>
